@@ -4,23 +4,30 @@ import json
 import os
 import requests
 
+
+def get_newest_push(events: dict):
+    for event in events:
+        if event["type"] == "PushEvent":
+            return event
+    return None
+
 config = {
-	"github_username": None,
-	"discord_client_id": None
+    "github_username": None,
+    "discord_client_id": None
 }
 
 config_location = "config.json"
 if os.path.isfile(config_location):
-	with open(config_location, "r") as config_file:
-		config.update(json.load(config_file))
+    with open(config_location, "r") as config_file:
+        config.update(json.load(config_file))
 
 # We do this so that when(if) the config format is updated it will auto populate new fields.
 with open(config_location, "w") as config_file:
-	json.dump(config, config_file, indent=2, separators=(",", ":"))
+    json.dump(config, config_file, indent=2, separators=(",", ":"))
 
 for key in config:
-	if not config[key]:
-		print("{} not specified in {}.".format(key, config_location))
+    if not config[key]:
+        print("{} not specified in {}.".format(key, config_location))
 
 rpc = Presence(config["discord_client_id"])
 rpc.connect()
@@ -30,11 +37,13 @@ headers = {}
 
 # rpc.update(join="fffffff")
 while True:
-	event_rq = sess.get("https://api.github.com/users/elevenchars/events", headers=headers)
-	if event_rq.status_code != 304:
-		headers["If-None-Match"] = event_rq.headers["ETag"]
-		event = json.loads(event_rq.text)
-		print(event[0])
-	else:
-		print("No change")
-	time.sleep(60) # can be changed, this is just so that ratelimit doesn't get roasted
+    events_rq = sess.get("https://api.github.com/users/{}/events".format(config["github_username"]), headers=headers)
+    if events_rq.status_code != 304:
+        headers["If-None-Match"] = events_rq.headers["ETag"]
+        events = json.loads(events_rq.text)
+        latest = get_newest_push(events)
+        print(latest)
+    else:
+        print("No change")
+    rpc.update(details=latest["repo"]["name"], state=latest["payload"]["commits"][0]["message"])
+    time.sleep(60)  # can be changed, this is just so that ratelimit doesn't get roasted
