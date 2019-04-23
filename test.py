@@ -37,7 +37,7 @@ headers = {}
 
 # rpc.update(join="fffffff")
 while True:
-    events_rq = sess.get("https://api.github.com/users/{}/events".format(config["github_username"]), headers=headers)
+    events_rq = sess.get("https://api.github.com/users/{}/events".format(config["github_username"]), headers=headers, timeout=10)
     if events_rq.status_code != 304:
         headers["If-None-Match"] = events_rq.headers["ETag"]
         events = json.loads(events_rq.text)
@@ -45,5 +45,10 @@ while True:
         print(latest)
     else:
         print("No change")
-    rpc.update(details=latest["repo"]["name"], state=latest["payload"]["commits"][0]["message"])
-    time.sleep(60)  # can be changed, this is just so that ratelimit doesn't get roasted
+
+    repo_name = latest["repo"]["name"]
+    commit_message = latest["payload"]["commits"][0]["message"]
+    print("Presence Updated\nRepo: {}\nMessage: {}".format(repo_name, commit_message))
+    rpc.update(details=repo_name, state=commit_message)
+    time.sleep(60)  # can be changed, this is just so that ratelimit doesn't
+    # get roasted
