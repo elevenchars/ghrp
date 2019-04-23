@@ -47,7 +47,8 @@ while True:
         print("No change")
 
     repo_name = latest["repo"]["name"]
-    commit_message = latest["payload"]["commits"][0]["message"]
+    # the split is so that we only get the tagline (?) of the repo
+    commit_message = latest["payload"]["commits"][0]["message"].split("\n")[0]
     print("Presence Updated\nRepo: {}\nMessage: {}".format(repo_name, commit_message))
     rpc.update(details=repo_name, state=commit_message)
     time.sleep(60)  # can be changed, this is just so that ratelimit doesn't
