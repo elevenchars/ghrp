@@ -54,13 +54,13 @@ while True:
         events = json.loads(events_rq.text)
         latest = get_newest_push(events)
         # print(latest)
-        repo_name = latest["repo"]["name"]
+        repo_name = latest["repo"]["name"].split("/")[1]
         commit_message = latest["payload"]["commits"][0]["message"].split("\n")[0]
         timestamp = calendar.timegm(time.strptime(latest["created_at"], "%Y-%m-%dT%H:%M:%SZ"))
 
         rpc.update(details=repo_name, state=commit_message, large_image="github", start=timestamp)
     else:
-        if (time.time() - timestamp) < 60*60:
+        if (time.time() - timestamp) > 60*60:
             print("Clearing RPC")
             rpc.clear() 
     time.sleep(30)
