@@ -1,5 +1,6 @@
 from pypresence import Presence
 import time
+import calendar
 import json
 import os
 import requests
@@ -42,8 +43,6 @@ if config["github_client_id" and "github_client_secret"]:
         "client_id": config["github_client_id"],
         "client_secret": config["github_client_secret"]
     }
-else:
-    print("Proceeding without GitHub OAuth (60 rq/hr)")
 
 events_url = "https://api.github.com/users/{}/events".format(config["github_username"])
 # rpc.update(join="fffffff")
@@ -54,14 +53,14 @@ while True:
         headers["If-None-Match"] = events_rq.headers["ETag"]
         events = json.loads(events_rq.text)
         latest = get_newest_push(events)
-        print(latest)
-    else:
-        print("No change")
+        # print(latest)
+        repo_name = latest["repo"]["name"]
+        commit_message = latest["payload"]["commits"][0]["message"].split("\n")[0]
+        timestamp = calendar.timegm(time.strptime(latest["created_at"], "%Y-%m-%dT%H:%M:%SZ"))
 
-    repo_name = latest["repo"]["name"]
-    # the split is so that we only get the tagline (?) of the repo
-    commit_message = latest["payload"]["commits"][0]["message"].split("\n")[0]
-    print("Presence Updated\nRepo: {}\nMessage: {}".format(repo_name, commit_message))
-    rpc.update(details=repo_name, state=commit_message, large_image="github")
-    time.sleep(60)  # can be changed, this is just so that ratelimit doesn't
-    # get roasted
+        rpc.update(details=repo_name, state=commit_message, large_image="github", start=timestamp)
+    else:
+        if (time.time() - timestamp) < 60*60:
+            print("Clearing RPC")
+            rpc.clear() 
+    time.sleep(30)
