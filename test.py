@@ -58,7 +58,7 @@ while True:
         commit_message = latest["payload"]["commits"][0]["message"].split("\n")[0]
         timestamp = calendar.timegm(time.strptime(latest["created_at"], "%Y-%m-%dT%H:%M:%SZ"))
 
-        rpc.update(details=repo_name, state=commit_message, large_image="github", start=timestamp)
+        rpc.update(details=repo_name, state=commit_message, large_image="github")
     else:
         if (time.time() - timestamp) > 60*60:
             print("Clearing RPC")
