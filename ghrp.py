@@ -6,11 +6,62 @@ import os
 import requests
 
 
-def get_newest_push(events: dict):
-    for event in events:
-        if event["type"] == "PushEvent":
-            return event
-    return None
+class ghrp():
+    def __init__(self, discord_client_id: str, github_username: str, github_client_id: str = None, github_client_secret: str = None):
+        self.dclient = discord_client_id
+        self.gusername = github_username
+        self.gclientid = github_client_id
+        self.gclientsecret = github_client_secret
+        self.show_status = False
+
+        self.payload = None
+        self.headers = {}
+        self.events_url = "https://api.github.com/users/{}/events".format(
+            config["github_username"])
+        self.session = requests.Session()
+
+        # if github client id and secret are not provided we need to make sure
+        # we don't go over the ratelimit.
+        if self.gclientid and self.gclientsecret:
+            self.interval = 30
+            payload = {
+                "client_id": config["github_client_id"],
+                "client_secret": config["github_client_secret"]
+            }
+        else:
+            self.interval = 60
+
+        self.rpc = Presence(self.dclient)
+        self.rpc.connect()
+
+    def get_newest_push(self, events: dict):
+        for event in events:
+            if event["type"] == "PushEvent":
+                return event
+        return None
+
+    def update(self):
+        events_rq = self.session.get(
+        self.events_url, headers=self.headers, params=self.payload)
+        if events_rq.status_code != 304:
+            self.headers["If-None-Match"] = events_rq.headers["ETag"]
+            events = json.loads(events_rq.text)
+            latest = self.get_newest_push(events)
+            # print(latest)
+            repo_name = latest["repo"]["name"].split("/")[1]
+            commit_message = latest["payload"]["commits"][0]["message"].split("\n")[
+                                                                              0]
+            timestamp = calendar.timegm(time.strptime(
+                latest["created_at"], "%Y-%m-%dT%H:%M:%SZ"))
+
+            self.rpc.update(details=repo_name, state=commit_message,
+                   large_image="github")
+        else:
+            if (time.time() - timestamp) > 60*60 and self.show_status:
+                print("Clearing RPC")
+                rpc.clear()
+                self.show_status = False
+
 
 config = {
     "github_username": None,
@@ -32,35 +83,8 @@ for key in config:
     if not config[key]:
         print("{} not specified in {}.".format(key, config_location))
 
-rpc = Presence(config["discord_client_id"])
-rpc.connect()
+instance = ghrp(config["discord_client_id"], config["github_username"], config["github_client_id"], config["github_client_secret"])
 
-sess = requests.Session()
-headers = {}
-payload = None
-if config["github_client_id" and "github_client_secret"]:
-    payload = {
-        "client_id": config["github_client_id"],
-        "client_secret": config["github_client_secret"]
-    }
-
-events_url = "https://api.github.com/users/{}/events".format(config["github_username"])
-# rpc.update(join="fffffff")
 while True:
-    # this crashes :( don't know why
-    events_rq = sess.get(events_url, headers=headers, params=payload)
-    if events_rq.status_code != 304:
-        headers["If-None-Match"] = events_rq.headers["ETag"]
-        events = json.loads(events_rq.text)
-        latest = get_newest_push(events)
-        # print(latest)
-        repo_name = latest["repo"]["name"].split("/")[1]
-        commit_message = latest["payload"]["commits"][0]["message"].split("\n")[0]
-        timestamp = calendar.timegm(time.strptime(latest["created_at"], "%Y-%m-%dT%H:%M:%SZ"))
-
-        rpc.update(details=repo_name, state=commit_message, large_image="github")
-    else:
-        if (time.time() - timestamp) > 60*60:
-            print("Clearing RPC")
-            rpc.clear() 
-    time.sleep(30)
+    instance.update()
+    time.sleep(instance.interval)
