@@ -46,25 +46,25 @@ class ghrp():
         self.rpc = Presence(self.dclient)
         self.rpc.connect()
 
-    def get_newest_push(self, events: dict): -> dict
-    """Helper method for getting the most recent commit.
-    Returns the most recent event object that includes a commit (not new projects)
+    def get_newest_push(self, events: dict) -> dict:
+        """Helper method for getting the most recent commit.
+        Returns the most recent event object that includes a commit (not new projects)
 
-    Returns:
-        dict -- Most recent event containing a commit.
-    """
+        Returns:
+            dict -- Most recent event containing a commit.
+        """
         for event in events:
             if event["type"] == "PushEvent":
                 return event
         return None
 
-    def update(self): -> None
-    """Method to update the rich presence instance.
-    Every 30 or 60 seconds (see __init__) it queries the GitHub events API.
-    If there is new info, it checks if it is a commit. If it is, it parses it
-    and updates the rich presence. After 1 hour, it clears the rich presence.
-    """
-       events_rq = self.session.get(
+    def update(self) -> None:
+        """Method to update the rich presence instance.
+        Every 30 or 60 seconds (see __init__) it queries the GitHub events API.
+        If there is new info, it checks if it is a commit. If it is, it parses it
+        and updates the rich presence. After 1 hour, it clears the rich presence.
+        """
+        events_rq = self.session.get(
             self.events_url, headers=self.headers, params=self.payload)
         if events_rq.status_code != 304:
             self.show_status = True
