@@ -1,7 +1,7 @@
 # discordghrp
-### discord rich presence tool
+#### Discord Rich Presence Tool
 
-Discordghrp will show your most recent GitHub commit for up to one hour after it is made in your rich presence.
+GHRP will show your most recent GitHub commit for up to one hour after it is made in your rich presence.
 
 ## Prerequisites
 
@@ -24,3 +24,10 @@ This will fail, but generate a file called `config.json`. Add your information.
 You can then run `ghrp.py` in the background and have your rich presence automatically update
 
 A GitHub OAuth application is not specifically required to use this, but in order to refresh the presence often (> once/min) we need to increase the ratelimit.
+
+## Known Flaws
+
+Currently, GHRP is not smart enough to determine if it needs to update your presence on a non-commit event.
+
+
+For example, if a `WatchEvent` is pushed to the events API and no commit is made in the past hour it will show the most recent commit for `self.interval` seconds. This will be fixed shortly after a small refactor of the `ghrp.update()`.
