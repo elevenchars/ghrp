@@ -11,12 +11,15 @@ class ghrp():
         """Init method for the GHRP class.
 
         Arguments:
-            discord_client_id {str} -- Discord Client ID from the developer portal.
+            discord_client_id {str} -- Discord Client ID from the developer
+            portal.
             github_username {str} -- GitHub username to monitor
 
         Keyword Arguments:
-            github_client_id {str} -- GitHub OAuth application client id (default: {None})
-            github_client_secret {str} -- GitHub OAuth application cient secret (default: {None})
+            github_client_id {str} -- GitHub OAuth application client id 
+            (default: {None})
+            github_client_secret {str} -- GitHub OAuth application client
+            secret (default: {None})
         """
         self.dclient = discord_client_id
         self.gusername = github_username
@@ -48,7 +51,8 @@ class ghrp():
 
     def get_newest_push(self, events: dict) -> dict:
         """Helper method for getting the most recent commit.
-        Returns the most recent event object that includes a commit (not new projects)
+        Returns the most recent event object that includes a commit
+        (not new projects)
 
         Returns:
             dict -- Most recent event containing a commit.
@@ -61,8 +65,9 @@ class ghrp():
     def update(self) -> None:
         """Method to update the rich presence instance.
         Every 30 or 60 seconds (see __init__) it queries the GitHub events API.
-        If there is new info, it checks if it is a commit. If it is, it parses it
-        and updates the rich presence. After 1 hour, it clears the rich presence.
+        If there is new info, it checks if it is a commit. If it is, it
+        parses it and updates the rich presence. After 1 hour, it clears the
+        rich presence.
         """
         events_rq = self.session.get(
             self.events_url, headers=self.headers, params=self.payload)
@@ -84,30 +89,30 @@ class ghrp():
                 self.rpc.clear()
                 self.show_status = False
 
+if __name__ == "__main__":
+    config = {
+        "discord_client_id": None,
+        "github_username": None,
+        "github_client_id": None,
+        "github_client_secret": None,
+    }
 
-config = {
-    "github_username": None,
-    "discord_client_id": None,
-    "github_client_id": None,
-    "github_client_secret": None,
-}
+    config_location = "config.json"
+    if os.path.isfile(config_location):
+        with open(config_location, "r") as config_file:
+            config.update(json.load(config_file))
 
-config_location = "config.json"
-if os.path.isfile(config_location):
-    with open(config_location, "r") as config_file:
-        config.update(json.load(config_file))
+    # We do this so that when(if) the config format is updated it will auto populate new fields.
+    with open(config_location, "w") as config_file:
+        json.dump(config, config_file, indent=2, separators=(",", ":"))
 
-# We do this so that when(if) the config format is updated it will auto populate new fields.
-with open(config_location, "w") as config_file:
-    json.dump(config, config_file, indent=2, separators=(",", ":"))
+    for key in config:
+        if not config[key]:
+            print("{} not specified in {}.".format(key, config_location))
 
-for key in config:
-    if not config[key]:
-        print("{} not specified in {}.".format(key, config_location))
+    instance = ghrp(config["discord_client_id"], config["github_username"],
+                    config["github_client_id"], config["github_client_secret"])
 
-instance = ghrp(config["discord_client_id"], config["github_username"],
-                config["github_client_id"], config["github_client_secret"])
-
-while True:
-    instance.update()
-    time.sleep(instance.interval)
+    while True:
+        instance.update()
+        time.sleep(instance.interval)
