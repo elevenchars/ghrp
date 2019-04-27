@@ -1,4 +1,4 @@
-# discordghrp
+# GHRP
 ###### Discord Rich Presence Tool
 
 GHRP will show your most recent GitHub commit for up to one hour after it is made in your rich presence.
